@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Chesapeake Configurator</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="header">
+        <div class="logo-container">
+            <img src="chesapeake.png" alt="Chesapeake Logo" class="logo">
+            <span class="title">CHESAPEAKE CONFIGURATOR</span>
+        </div>
+        <div class="tabs-navigation">
+            <button class="tab-btn active" data-tab="status-panel">Status</button>
+            <button class="tab-btn" data-tab="timing-panel">Timing</button>
+            <button class="tab-btn" data-tab="console-panel">Console & CLI</button>
+            <button class="tab-btn" data-tab="pid-panel">PID Tuning</button>
+            <button class="tab-btn" data-tab="test-panel">Actuator Test</button>
+            <button class="tab-btn" data-tab="allocate-panel">Allocate</button>
+        </div>
+        <div class="connection-controls">
+            <button id="btn-connect" class="btn">Connect</button>
+            <span id="connection-status" class="status-indicator disconnected">Disconnected</span>
+            <button id="btn-save" class="btn btn-success" disabled>Save</button>
+            <button id="btn-reboot" class="btn" disabled>Reboot</button>
+            <button id="btn-defaults" class="btn btn-warning" disabled>Reset Defaults</button>
+            <button id="btn-zero-biases" class="btn btn-danger" disabled style="display: none;">Zero Biases</button>
+            <button id="btn-calibrate" class="btn btn-success" disabled>Calibrate</button>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div id="status-panel" class="panel tab-content active">
+            <h2>System Status</h2>
+            <div class="status-container" style="display: flex; flex-direction: column; gap: 20px; flex: 1; overflow-y: auto;">
+                
+                <div class="status-summary-row" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <div class="status-card">
+                        <span class="status-card-label">Arm State</span>
+                        <div id="badge-arm" class="status-badge badge-disarmed">DISARMED</div>
+                    </div>
+                    <div class="status-card">
+                        <span class="status-card-label">Flight Mode</span>
+                        <div id="badge-mode" class="status-badge badge-disarmed">UNKNOWN</div>
+                    </div>
+                    <div class="status-card">
+                        <span class="status-card-label">Battery Voltage</span>
+                        <div class="battery-status-container" style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                            <div class="battery-icon-outer" style="width: 40px; height: 20px; border: 2px solid #3f3f46; border-radius: 3px; padding: 2px; position: relative; background-color: #09090b;">
+                                <div id="battery-level-inner" style="height: 100%; width: 0%; background-color: #ef4444; border-radius: 1px; transition: width 0.3s, background-color 0.3s;"></div>
+                                <div class="battery-tip" style="width: 3px; height: 8px; background-color: #3f3f46; position: absolute; right: -5px; top: 4px; border-radius: 0 1px 1px 0;"></div>
+                            </div>
+                            <span id="label-vbat" style="font-family: monospace; font-size: 15px; font-weight: bold; color: #e4e4e7;">0.00V</span>
+                        </div>
+                    </div>
+                    <div class="status-card">
+                        <span class="status-card-label">Loop Time</span>
+                        <div id="label-loop-time" style="font-family: monospace; font-size: 15px; font-weight: bold; color: #e4e4e7; margin-top: 5px;">0.00ms</div>
+                    </div>
+                </div>
+
+                <div class="status-section-card">
+                    <h3>Actuator Outputs</h3>
+                    <div class="status-actuators-grid">
+                        <div class="actuator-circle-item" id="circle-box-m1">
+                            <div class="actuator-circle" id="circle-m1">0%</div>
+                            <span class="actuator-label">Motor 1</span>
+                        </div>
+                        <div class="actuator-circle-item" id="circle-box-m2">
+                            <div class="actuator-circle" id="circle-m2">0%</div>
+                            <span class="actuator-label">Motor 2</span>
+                        </div>
+                        <div class="actuator-circle-item" id="circle-box-m3">
+                            <div class="actuator-circle" id="circle-m3">0%</div>
+                            <span class="actuator-label">Motor 3</span>
+                        </div>
+                        <div class="actuator-circle-item" id="circle-box-m4">
+                            <div class="actuator-circle" id="circle-m4">0%</div>
+                            <span class="actuator-label">Motor 4</span>
+                        </div>
+                        <div class="actuator-circle-item" id="circle-box-s1">
+                            <div class="actuator-circle" id="circle-s1">90°</div>
+                            <span class="actuator-label">Servo 1</span>
+                        </div>
+                        <div class="actuator-circle-item" id="circle-box-s2">
+                            <div class="actuator-circle" id="circle-s2">90°</div>
+                            <span class="actuator-label">Servo 2</span>
+                        </div>
+                        <div class="actuator-circle-item" id="circle-box-s3">
+                            <div class="actuator-circle" id="circle-s3">90°</div>
+                            <span class="actuator-label">Servo 3</span>
+                        </div>
+                        <div class="actuator-circle-item" id="circle-box-s4">
+                            <div class="actuator-circle" id="circle-s4">90°</div>
+                            <span class="actuator-label">Servo 4</span>
+                        </div>
+                    </div>
+                </div>                <div class="status-section-card">
+                    <h3>Accelerometer Telemetry</h3>
+                    <div class="imu-bars-container" style="display: flex; justify-content: space-around; align-items: stretch; height: 180px; padding: 10px 0;">
+                        <!-- Accel X -->
+                        <div class="imu-bar-item" style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1;">
+                            <span id="label-val-ax" style="font-family: monospace; font-size: 10px; font-weight: bold; color: #e4e4e7; min-height: 15px;">0m/s²</span>
+                            <div class="imu-bar-track" style="width: 10px; flex: 1; background-color: #09090b; border: 1px solid #202023; border-radius: 5px; overflow: hidden; position: relative;">
+                                <div id="imu-bar-ax" style="width: 100%; height: 0%; background-color: #f59e0b; position: absolute; bottom: 50%;"></div>
+                                <div style="position: absolute; left: 0; right: 0; bottom: 50%; height: 1px; background-color: #3f3f46; z-index: 1;"></div>
+                            </div>
+                            <span class="imu-bar-label" style="font-size: 11px; font-weight: 600; color: #a1a1aa;">Acc X</span>
+                        </div>
+                        <!-- Accel Y -->
+                        <div class="imu-bar-item" style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1;">
+                            <span id="label-val-ay" style="font-family: monospace; font-size: 10px; font-weight: bold; color: #e4e4e7; min-height: 15px;">0m/s²</span>
+                            <div class="imu-bar-track" style="width: 10px; flex: 1; background-color: #09090b; border: 1px solid #202023; border-radius: 5px; overflow: hidden; position: relative;">
+                                <div id="imu-bar-ay" style="width: 100%; height: 0%; background-color: #8b5cf6; position: absolute; bottom: 50%;"></div>
+                                <div style="position: absolute; left: 0; right: 0; bottom: 50%; height: 1px; background-color: #3f3f46; z-index: 1;"></div>
+                            </div>
+                            <span class="imu-bar-label" style="font-size: 11px; font-weight: 600; color: #a1a1aa;">Acc Y</span>
+                        </div>
+                        <!-- Accel Z -->
+                        <div class="imu-bar-item" style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1;">
+                            <span id="label-val-az" style="font-family: monospace; font-size: 10px; font-weight: bold; color: #e4e4e7; min-height: 15px;">0m/s²</span>
+                            <div class="imu-bar-track" style="width: 10px; flex: 1; background-color: #09090b; border: 1px solid #202023; border-radius: 5px; overflow: hidden; position: relative;">
+                                <div id="imu-bar-az" style="width: 100%; height: 0%; background-color: #ec4899; position: absolute; bottom: 50%;"></div>
+                                <div style="position: absolute; left: 0; right: 0; bottom: 50%; height: 1px; background-color: #3f3f46; z-index: 1;"></div>
+                            </div>
+                            <span class="imu-bar-label" style="font-size: 11px; font-weight: 600; color: #a1a1aa;">Acc Z</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="status-section-card">
+                    <h3>Control Rates Telemetry</h3>
+                    <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; margin-bottom: 10px; font-family: monospace; font-size: 12px; font-weight: bold;">
+                        <div style="color: #ef4444;">Roll: Setpoint <span id="txt-rate-cmd-x">0</span>°/s | Measured <span id="txt-rate-meas-x">0</span>°/s</div>
+                        <div style="color: #3b82f6;">Pitch: Setpoint <span id="txt-rate-cmd-y">0</span>°/s | Measured <span id="txt-rate-meas-y">0</span>°/s</div>
+                        <div style="color: #10b981;">Yaw: Setpoint <span id="txt-rate-cmd-z">0</span>°/s | Measured <span id="txt-rate-meas-z">0</span>°/s</div>
+                    </div>
+                    <canvas id="control-rate-chart" width="800" height="220" style="width: 100%; height: 220px; background-color: #09090b; border: 1px solid #202023; border-radius: 4px; display: block;"></canvas>
+                    <div style="display: flex; justify-content: center; gap: 20px; margin-top: 8px; font-size: 11px; font-weight: 600; color: #a1a1aa;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div style="width: 10px; height: 3px; border-top: 2px dashed #ef4444;"></div>
+                            <span>Roll Setpoint</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div style="width: 10px; height: 3px; background-color: #ef4444;"></div>
+                            <span>Roll Measured</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div style="width: 10px; height: 3px; border-top: 2px dashed #3b82f6;"></div>
+                            <span>Pitch Setpoint</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div style="width: 10px; height: 3px; background-color: #3b82f6;"></div>
+                            <span>Pitch Measured</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div style="width: 10px; height: 3px; border-top: 2px dashed #10b981;"></div>
+                            <span>Yaw Setpoint</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div style="width: 10px; height: 3px; background-color: #10b981;"></div>
+                            <span>Yaw Measured</span>
+                        </div>
+                    </div>
+                </div>
+
+            <div class="status-section-card">
+                <h3>RC Receiver Channels</h3>
+                    <div class="rc-channels-container" style="display: flex; flex-direction: column; gap: 12px;">
+                        <div class="rc-channel-row">
+                            <div class="rc-channel-header" style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #a1a1aa; margin-bottom: 4px;">
+                                <span class="rc-channel-label">Throttle</span>
+                                <span id="label-rc-thr" style="font-family: monospace; font-weight: bold; color: #e4e4e7;">0%</span>
+                            </div>
+                            <div class="rc-bar-track" style="height: 10px; background-color: #09090b; border: 1px solid #202023; border-radius: 5px; overflow: hidden; position: relative;">
+                                <div id="rc-bar-thr" style="height: 100%; width: 0%; background-color: #ef4444; transition: width 0.05s ease-out; position: absolute; left: 0;"></div>
+                            </div>
+                        </div>
+                        <div class="rc-channel-row">
+                            <div class="rc-channel-header" style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #a1a1aa; margin-bottom: 4px;">
+                                <span class="rc-channel-label">Roll/X</span>
+                                <span id="label-rc-rol" style="font-family: monospace; font-weight: bold; color: #e4e4e7;">0%</span>
+                            </div>
+                            <div class="rc-bar-track" style="height: 10px; background-color: #09090b; border: 1px solid #202023; border-radius: 5px; overflow: hidden; position: relative;">
+                                <div id="rc-bar-rol" style="height: 100%; width: 0%; background-color: #ef4444; transition: width 0.05s ease-out; position: absolute; left: 50%;"></div>
+                                <div style="position: absolute; left: 50%; top: 0; width: 1px; height: 100%; background-color: #3f3f46;"></div>
+                            </div>
+                        </div>
+                        <div class="rc-channel-row">
+                            <div class="rc-channel-header" style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #a1a1aa; margin-bottom: 4px;">
+                                <span class="rc-channel-label">Pitch/Y</span>
+                                <span id="label-rc-pit" style="font-family: monospace; font-weight: bold; color: #e4e4e7;">0%</span>
+                            </div>
+                            <div class="rc-bar-track" style="height: 10px; background-color: #09090b; border: 1px solid #202023; border-radius: 5px; overflow: hidden; position: relative;">
+                                <div id="rc-bar-pit" style="height: 100%; width: 0%; background-color: #ef4444; transition: width 0.05s ease-out; position: absolute; left: 50%;"></div>
+                                <div style="position: absolute; left: 50%; top: 0; width: 1px; height: 100%; background-color: #3f3f46;"></div>
+                            </div>
+                        </div>
+                        <div class="rc-channel-row">
+                            <div class="rc-channel-header" style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #a1a1aa; margin-bottom: 4px;">
+                                <span class="rc-channel-label">Yaw/Z</span>
+                                <span id="label-rc-yaw" style="font-family: monospace; font-weight: bold; color: #e4e4e7;">0%</span>
+                            </div>
+                            <div class="rc-bar-track" style="height: 10px; background-color: #09090b; border: 1px solid #202023; border-radius: 5px; overflow: hidden; position: relative;">
+                                <div id="rc-bar-yaw" style="height: 100%; width: 0%; background-color: #ef4444; transition: width 0.05s ease-out; position: absolute; left: 50%;"></div>
+                                <div style="position: absolute; left: 50%; top: 0; width: 1px; height: 100%; background-color: #3f3f46;"></div>
+                            </div>
+                        </div>
+                        <div class="rc-channel-row">
+                            <div class="rc-channel-header" style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #a1a1aa; margin-bottom: 4px;">
+                                <span class="rc-channel-label">Arm Switch</span>
+                                <span id="label-rc-arm" style="font-family: monospace; font-weight: bold; color: #e4e4e7;">0%</span>
+                            </div>
+                            <div class="rc-bar-track" style="height: 10px; background-color: #09090b; border: 1px solid #202023; border-radius: 5px; overflow: hidden; position: relative;">
+                                <div id="rc-bar-arm" style="height: 100%; width: 0%; background-color: #ef4444; transition: width 0.05s ease-out; position: absolute; left: 0;"></div>
+                            </div>
+                        </div>
+                        <div class="rc-channel-row">
+                            <div class="rc-channel-header" style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #a1a1aa; margin-bottom: 4px;">
+                                <span class="rc-channel-label">Mode Switch</span>
+                                <span id="label-rc-mod" style="font-family: monospace; font-weight: bold; color: #e4e4e7;">0%</span>
+                            </div>
+                            <div class="rc-bar-track" style="height: 10px; background-color: #09090b; border: 1px solid #202023; border-radius: 5px; overflow: hidden; position: relative;">
+                                <div id="rc-bar-mod" style="height: 100%; width: 0%; background-color: #ef4444; transition: width 0.05s ease-out; position: absolute; left: 0;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="timing-panel" class="panel tab-content">
+            <h2>Real-Time Loop Budget & Timing</h2>
+            <div class="timing-container" style="display: flex; flex-direction: column; gap: 20px; flex: 1; overflow-y: auto;">
+                
+                <div class="status-section-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0;">Loop Budget (1ms @ 1000Hz Target)</h3>
+                        <span id="txt-time-total-avg" style="font-family: monospace; font-size: 16px; font-weight: bold; color: #e4e4e7;">0.00ms active</span>
+                    </div>
+                    
+                    <div class="timing-budget-bar" style="display: flex; height: 36px; background-color: #09090b; border: 1px solid #27272a; border-radius: 6px; overflow: hidden; position: relative; margin-bottom: 15px;">
+                        <div id="bar-time-imu" style="height: 100%; width: 0%; background-color: #ef4444; transition: width 0.05s ease-out;" title="IMU Read"></div>
+                        <div id="bar-time-rcrx" style="height: 100%; width: 0%; background-color: #3b82f6; transition: width 0.05s ease-out;" title="RC RX Read"></div>
+                        <div id="bar-time-nav" style="height: 100%; width: 0%; background-color: #10b981; transition: width 0.05s ease-out;" title="GNC Navigation"></div>
+                        <div id="bar-time-ctl" style="height: 100%; width: 0%; background-color: #f59e0b; transition: width 0.05s ease-out;" title="GNC Control"></div>
+                        <div id="bar-time-alloc" style="height: 100%; width: 0%; background-color: #8b5cf6; transition: width 0.05s ease-out;" title="Actuator Alloc"></div>
+                        <div id="bar-time-motors" style="height: 100%; width: 0%; background-color: #ec4899; transition: width 0.05s ease-out;" title="Motor Write"></div>
+                        <div id="bar-time-servos" style="height: 100%; width: 0%; background-color: #14b8a6; transition: width 0.05s ease-out;" title="Servo Write"></div>
+                        <div id="bar-time-idle" style="height: 100%; width: 0%; background-color: #27272a; transition: width 0.05s ease-out;" title="Idle / Clamping"></div>
+                    </div>
+                </div>
+
+                <div class="status-section-card">
+                    <h3 style="margin-bottom: 15px;">Detailed Breakdown</h3>
+                    <div class="timing-breakdown-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
+                        <!-- IMU Read -->
+                        <div class="timing-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background-color: #121214; border: 1px solid #27272a; border-radius: 6px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #ef4444;"></div>
+                                <span style="font-size: 13px; font-weight: 600; color: #a1a1aa;">IMU Read</span>
+                            </div>
+                            <span id="txt-time-imu" style="font-family: monospace; font-weight: bold; color: #e4e4e7;">0.0 us</span>
+                        </div>
+                        <!-- RC RX Read -->
+                        <div class="timing-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background-color: #121214; border: 1px solid #27272a; border-radius: 6px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #3b82f6;"></div>
+                                <span style="font-size: 13px; font-weight: 600; color: #a1a1aa;">RC RX Read</span>
+                            </div>
+                            <span id="txt-time-rcrx" style="font-family: monospace; font-weight: bold; color: #e4e4e7;">0.0 us</span>
+                        </div>
+                        <!-- GNC Navigation -->
+                        <div class="timing-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background-color: #121214; border: 1px solid #27272a; border-radius: 6px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #10b981;"></div>
+                                <span style="font-size: 13px; font-weight: 600; color: #a1a1aa;">GNC Navigation</span>
+                            </div>
+                            <span id="txt-time-nav" style="font-family: monospace; font-weight: bold; color: #e4e4e7;">0.0 us</span>
+                        </div>
+                        <!-- GNC Control -->
+                        <div class="timing-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background-color: #121214; border: 1px solid #27272a; border-radius: 6px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #f59e0b;"></div>
+                                <span style="font-size: 13px; font-weight: 600; color: #a1a1aa;">GNC Control</span>
+                            </div>
+                            <span id="txt-time-ctl" style="font-family: monospace; font-weight: bold; color: #e4e4e7;">0.0 us</span>
+                        </div>
+                        <!-- GNC Mixer/Alloc -->
+                        <div class="timing-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background-color: #121214; border: 1px solid #27272a; border-radius: 6px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #8b5cf6;"></div>
+                                <span style="font-size: 13px; font-weight: 600; color: #a1a1aa;">GNC Mixer/Alloc</span>
+                            </div>
+                            <span id="txt-time-alloc" style="font-family: monospace; font-weight: bold; color: #e4e4e7;">0.0 us</span>
+                        </div>
+                        <!-- Motor Write -->
+                        <div class="timing-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background-color: #121214; border: 1px solid #27272a; border-radius: 6px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #ec4899;"></div>
+                                <span style="font-size: 13px; font-weight: 600; color: #a1a1aa;">Motor Write</span>
+                            </div>
+                            <span id="txt-time-motors" style="font-family: monospace; font-weight: bold; color: #e4e4e7;">0.0 us</span>
+                        </div>
+                        <!-- Servo Write -->
+                        <div class="timing-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background-color: #121214; border: 1px solid #27272a; border-radius: 6px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #14b8a6;"></div>
+                                <span style="font-size: 13px; font-weight: 600; color: #a1a1aa;">Servo Write</span>
+                            </div>
+                            <span id="txt-time-servos" style="font-family: monospace; font-weight: bold; color: #e4e4e7;">0.0 us</span>
+                        </div>
+                        <!-- Idle Clamping -->
+                        <div class="timing-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background-color: #121214; border: 1px solid #27272a; border-radius: 6px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #27272a;"></div>
+                                <span style="font-size: 13px; font-weight: 600; color: #a1a1aa;">Idle Clamping</span>
+                            </div>
+                            <span id="txt-time-idle" style="font-family: monospace; font-weight: bold; color: #e4e4e7;">0.0 us</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="console-panel" class="panel tab-content">
+            <h2>Serial Monitor & CLI</h2>
+            <div class="cli-container">
+                <div class="monitor-header">Serial Monitor</div>
+                <div id="serial-monitor" class="serial-monitor"></div>
+                <div class="monitor-header">CLI Terminal</div>
+                <div id="cli-output" class="cli-output"></div>
+                <div class="cli-input-line">
+                    <input type="text" id="cli-input" placeholder="Type command (e.g. help, dump) and press Enter..." disabled>
+                    <button id="btn-send-cli" class="btn" disabled>Send</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="test-panel" class="panel tab-content">
+            <h2>Actuator Test</h2>
+            <div class="test-controls" style="display: flex; flex-direction: column; gap: 15px; flex: 1;">
+                <div class="test-enable-row" style="display: flex; align-items: center; gap: 10px;">
+                    <button id="btn-toggle-test" class="btn btn-warning" disabled>Enable Test Mode</button>
+                    <span id="test-status" class="status-indicator disconnected">Test Disabled</span>
+                </div>
+                <div id="test-placeholder" class="params-placeholder">
+                    Connect and enable test mode to control actuators.
+                </div>
+                <div id="test-sliders" class="test-sliders-container" style="display: none; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1;">
+                    <!-- Dynamically populated sliders -->
+                </div>
+            </div>
+        </div>
+
+        <div id="pid-panel" class="panel tab-content">
+            <div class="panel-header">
+                <h2>PID Tuning</h2>
+                <div class="param-actions">
+                    <button id="btn-refresh" class="btn" disabled>Reload</button>
+                </div>
+            </div>
+            <div class="params-container" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                <div id="params-loading" class="params-placeholder">
+                    Connect to view and edit flight parameters.
+                </div>
+                
+                <div class="pid-layout-container" style="display: flex; flex-direction: column; gap: 20px; overflow-y: auto; flex: 1; padding-right: 5px; margin-top: 15px;">
+                    <!-- Axis Rotation Efforts Visualization Box -->
+                    <div class="pid-controller-box" style="border: 1px solid #27272a; border-radius: 8px; padding: 20px; background-color: #09090b;">
+                        <h3 style="margin-top: 0; border-bottom: 1px solid #27272a; padding-bottom: 10px; color: #a1a1aa; font-size: 13px; font-weight: bold; letter-spacing: 0.5px;">Axis Rotation Efforts</h3>
+                        <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
+                            
+                            <!-- Roll Effort -->
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: #ef4444;">
+                                    <span>Roll Effort</span>
+                                    <span id="txt-effort-roll" font-family="monospace">0.0000</span>
+                                </div>
+                                <div style="width: 100%; height: 10px; background-color: #18181b; border: 1px solid #27272a; border-radius: 5px; position: relative; overflow: hidden;">
+                                    <!-- Center line -->
+                                    <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background-color: #3f3f46; z-index: 2;"></div>
+                                    <!-- Effort Bar -->
+                                    <div id="bar-effort-roll" style="position: absolute; height: 100%; width: 0%; left: 50%; background-color: #ef4444; border-radius: 1px;"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Pitch Effort -->
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: #3b82f6;">
+                                    <span>Pitch Effort</span>
+                                    <span id="txt-effort-pitch" font-family="monospace">0.0000</span>
+                                </div>
+                                <div style="width: 100%; height: 10px; background-color: #18181b; border: 1px solid #27272a; border-radius: 5px; position: relative; overflow: hidden;">
+                                    <!-- Center line -->
+                                    <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background-color: #3f3f46; z-index: 2;"></div>
+                                    <!-- Effort Bar -->
+                                    <div id="bar-effort-pitch" style="position: absolute; height: 100%; width: 0%; left: 50%; background-color: #3b82f6; border-radius: 1px;"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Yaw Effort -->
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: #10b981;">
+                                    <span>Yaw Effort</span>
+                                    <span id="txt-effort-yaw" font-family="monospace">0.0000</span>
+                                </div>
+                                <div style="width: 100%; height: 10px; background-color: #18181b; border: 1px solid #27272a; border-radius: 5px; position: relative; overflow: hidden;">
+                                    <!-- Center line -->
+                                    <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background-color: #3f3f46; z-index: 2;"></div>
+                                    <!-- Effort Bar -->
+                                    <div id="bar-effort-yaw" style="position: absolute; height: 100%; width: 0%; left: 50%; background-color: #10b981; border-radius: 1px;"></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Rate Controller Box -->
+                    <div class="pid-controller-box" style="border: 1px solid #27272a; border-radius: 8px; padding: 20px; background-color: #09090b;">
+                        <h3 style="margin-top: 0; border-bottom: 1px solid #27272a; padding-bottom: 10px; color: #ef4444; font-size: 15px; font-weight: bold;">Rate Controller</h3>
+                        <div class="pid-axes-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 15px;">
+                            <!-- Roll Axis -->
+                            <div class="pid-axis-box" style="border: 1px solid #1c1c1e; border-radius: 6px; padding: 15px; background-color: #121214;">
+                                <h4 style="margin-top: 0; border-bottom: 1px solid #27272a; padding-bottom: 8px; font-size: 13px; font-weight: bold; color: #ef4444;">Roll Rate</h4>
+                                <div class="pid-sliders" style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                                    <div class="pid-slider-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                        <span style="font-size: 12px; font-weight: bold; width: 35px; color: #a1a1aa;">Kp</span>
+                                        <input type="range" id="slider-roll_rate_kp" min="0.00" max="50.00" step="0.01" style="flex: 1; accent-color: #ef4444;" disabled>
+                                        <input type="text" id="val-roll_rate_kp" style="width: 65px; font-family: monospace; font-size: 11px; text-align: right; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 3px; border-radius: 3px;" disabled>
+                                    </div>
+                                    <div class="pid-slider-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                        <span style="font-size: 12px; font-weight: bold; width: 35px; color: #a1a1aa;">Ki</span>
+                                        <input type="range" id="slider-roll_rate_ki" min="0.00" max="50.00" step="0.01" style="flex: 1; accent-color: #ef4444;" disabled>
+                                        <input type="text" id="val-roll_rate_ki" style="width: 65px; font-family: monospace; font-size: 11px; text-align: right; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 3px; border-radius: 3px;" disabled>
+                                    </div>
+                                    <div class="pid-slider-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                        <span style="font-size: 12px; font-weight: bold; width: 35px; color: #a1a1aa;">Kd</span>
+                                        <input type="range" id="slider-roll_rate_kd" min="0.000" max="5.000" step="0.001" style="flex: 1; accent-color: #ef4444;" disabled>
+                                        <input type="text" id="val-roll_rate_kd" style="width: 65px; font-family: monospace; font-size: 11px; text-align: right; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 3px; border-radius: 3px;" disabled>
+                                    </div>
+                                    <div class="pid-slider-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                        <span style="font-size: 12px; font-weight: bold; width: 35px; color: #a1a1aa;">Imax</span>
+                                        <input type="range" id="slider-roll_rate_imax" min="0.00" max="10.00" step="0.01" style="flex: 1; accent-color: #ef4444;" disabled>
+                                        <input type="text" id="val-roll_rate_imax" style="width: 65px; font-family: monospace; font-size: 11px; text-align: right; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 3px; border-radius: 3px;" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Pitch Axis -->
+                            <div class="pid-axis-box" style="border: 1px solid #1c1c1e; border-radius: 6px; padding: 15px; background-color: #121214;">
+                                <h4 style="margin-top: 0; border-bottom: 1px solid #27272a; padding-bottom: 8px; font-size: 13px; font-weight: bold; color: #3b82f6;">Pitch Rate</h4>
+                                <div class="pid-sliders" style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                                    <div class="pid-slider-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                        <span style="font-size: 12px; font-weight: bold; width: 35px; color: #a1a1aa;">Kp</span>
+                                        <input type="range" id="slider-pitch_rate_kp" min="0.00" max="50.00" step="0.01" style="flex: 1; accent-color: #3b82f6;" disabled>
+                                        <input type="text" id="val-pitch_rate_kp" style="width: 65px; font-family: monospace; font-size: 11px; text-align: right; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 3px; border-radius: 3px;" disabled>
+                                    </div>
+                                    <div class="pid-slider-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                        <span style="font-size: 12px; font-weight: bold; width: 35px; color: #a1a1aa;">Ki</span>
+                                        <input type="range" id="slider-pitch_rate_ki" min="0.00" max="50.00" step="0.01" style="flex: 1; accent-color: #3b82f6;" disabled>
+                                        <input type="text" id="val-pitch_rate_ki" style="width: 65px; font-family: monospace; font-size: 11px; text-align: right; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 3px; border-radius: 3px;" disabled>
+                                    </div>
+                                    <div class="pid-slider-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                        <span style="font-size: 12px; font-weight: bold; width: 35px; color: #a1a1aa;">Kd</span>
+                                        <input type="range" id="slider-pitch_rate_kd" min="0.000" max="5.000" step="0.001" style="flex: 1; accent-color: #3b82f6;" disabled>
+                                        <input type="text" id="val-pitch_rate_kd" style="width: 65px; font-family: monospace; font-size: 11px; text-align: right; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 3px; border-radius: 3px;" disabled>
+                                    </div>
+                                    <div class="pid-slider-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                        <span style="font-size: 12px; font-weight: bold; width: 35px; color: #a1a1aa;">Imax</span>
+                                        <input type="range" id="slider-pitch_rate_imax" min="0.00" max="10.00" step="0.01" style="flex: 1; accent-color: #3b82f6;" disabled>
+                                        <input type="text" id="val-pitch_rate_imax" style="width: 65px; font-family: monospace; font-size: 11px; text-align: right; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 3px; border-radius: 3px;" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Yaw Axis -->
+                            <div class="pid-axis-box" style="border: 1px solid #1c1c1e; border-radius: 6px; padding: 15px; background-color: #121214;">
+                                <h4 style="margin-top: 0; border-bottom: 1px solid #27272a; padding-bottom: 8px; font-size: 13px; font-weight: bold; color: #10b981;">Yaw Rate</h4>
+                                <div class="pid-sliders" style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                                    <div class="pid-slider-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                        <span style="font-size: 12px; font-weight: bold; width: 35px; color: #a1a1aa;">Kp</span>
+                                        <input type="range" id="slider-yaw_rate_kp" min="0.00" max="50.00" step="0.01" style="flex: 1; accent-color: #10b981;" disabled>
+                                        <input type="text" id="val-yaw_rate_kp" style="width: 65px; font-family: monospace; font-size: 11px; text-align: right; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 3px; border-radius: 3px;" disabled>
+                                    </div>
+                                    <div class="pid-slider-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                        <span style="font-size: 12px; font-weight: bold; width: 35px; color: #a1a1aa;">Ki</span>
+                                        <input type="range" id="slider-yaw_rate_ki" min="0.00" max="50.00" step="0.01" style="flex: 1; accent-color: #10b981;" disabled>
+                                        <input type="text" id="val-yaw_rate_ki" style="width: 65px; font-family: monospace; font-size: 11px; text-align: right; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 3px; border-radius: 3px;" disabled>
+                                    </div>
+                                    <div class="pid-slider-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                        <span style="font-size: 12px; font-weight: bold; width: 35px; color: #a1a1aa;">Kd</span>
+                                        <input type="range" id="slider-yaw_rate_kd" min="0.000" max="5.000" step="0.001" style="flex: 1; accent-color: #10b981;" disabled>
+                                        <input type="text" id="val-yaw_rate_kd" style="width: 65px; font-family: monospace; font-size: 11px; text-align: right; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 3px; border-radius: 3px;" disabled>
+                                    </div>
+                                    <div class="pid-slider-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                        <span style="font-size: 12px; font-weight: bold; width: 35px; color: #a1a1aa;">Imax</span>
+                                        <input type="range" id="slider-yaw_rate_imax" min="0.00" max="10.00" step="0.01" style="flex: 1; accent-color: #10b981;" disabled>
+                                        <input type="text" id="val-yaw_rate_imax" style="width: 65px; font-family: monospace; font-size: 11px; text-align: right; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 3px; border-radius: 3px;" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Angle Controller Box -->
+                    <div class="pid-controller-box" style="border: 1px solid #27272a; border-radius: 8px; padding: 20px; background-color: #09090b;">
+                        <h3 style="margin-top: 0; border-bottom: 1px solid #27272a; padding-bottom: 10px; color: #3b82f6; font-size: 15px; font-weight: bold;">Angle Controller</h3>
+                        <div class="pid-axes-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 15px;">
+                            <!-- Roll Angle -->
+                            <div class="pid-axis-box" style="border: 1px solid #1c1c1e; border-radius: 6px; padding: 15px; background-color: #121214;">
+                                <h4 style="margin-top: 0; border-bottom: 1px solid #27272a; padding-bottom: 8px; font-size: 13px; font-weight: bold; color: #ef4444;">Roll Angle</h4>
+                                <div class="pid-sliders" style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                                    <div class="pid-slider-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                        <span style="font-size: 12px; font-weight: bold; width: 35px; color: #a1a1aa;">Kp</span>
+                                        <input type="range" id="slider-roll_ang_kp" min="0.00" max="50.00" step="0.01" style="flex: 1; accent-color: #ef4444;" disabled>
+                                        <input type="text" id="val-roll_ang_kp" style="width: 65px; font-family: monospace; font-size: 11px; text-align: right; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 3px; border-radius: 3px;" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Pitch Angle -->
+                            <div class="pid-axis-box" style="border: 1px solid #1c1c1e; border-radius: 6px; padding: 15px; background-color: #121214;">
+                                <h4 style="margin-top: 0; border-bottom: 1px solid #27272a; padding-bottom: 8px; font-size: 13px; font-weight: bold; color: #3b82f6;">Pitch Angle</h4>
+                                <div class="pid-sliders" style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                                    <div class="pid-slider-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                        <span style="font-size: 12px; font-weight: bold; width: 35px; color: #a1a1aa;">Kp</span>
+                                        <input type="range" id="slider-pitch_ang_kp" min="0.00" max="50.00" step="0.01" style="flex: 1; accent-color: #3b82f6;" disabled>
+                                        <input type="text" id="val-pitch_ang_kp" style="width: 65px; font-family: monospace; font-size: 11px; text-align: right; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 3px; border-radius: 3px;" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Yaw Angle -->
+                            <div class="pid-axis-box" style="border: 1px solid #1c1c1e; border-radius: 6px; padding: 15px; background-color: #121214;">
+                                <h4 style="margin-top: 0; border-bottom: 1px solid #27272a; padding-bottom: 8px; font-size: 13px; font-weight: bold; color: #10b981;">Yaw Angle</h4>
+                                <div class="pid-sliders" style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                                    <div class="pid-slider-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                        <span style="font-size: 12px; font-weight: bold; width: 35px; color: #a1a1aa;">Kp</span>
+                                        <input type="range" id="slider-yaw_ang_kp" min="0.00" max="50.00" step="0.01" style="flex: 1; accent-color: #10b981;" disabled>
+                                        <input type="text" id="val-yaw_ang_kp" style="width: 65px; font-family: monospace; font-size: 11px; text-align: right; background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 3px; border-radius: 3px;" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="allocate-panel" class="panel tab-content">
+            <div class="panel-header">
+                <h2>Actuator Allocation</h2>
+                <div class="allocator-select-container" style="display: flex; align-items: center; gap: 10px;">
+                    <label for="select-allocator" style="font-size: 13px; font-weight: bold; color: #a1a1aa;">Active Allocator:</label>
+                    <select id="select-allocator" class="param-select" style="background: #09090b; border: 1px solid #27272a; color: #e4e4e7; padding: 5px; border-radius: 4px; font-size: 13px;" disabled>
+                        <option value="QUAD">Quadcopter (X)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="params-container" style="display: flex; flex-direction: column; flex: 1; overflow-y: auto; background-color: #09090b; border: 1px solid #27272a; border-radius: 8px; margin-top: 15px; padding: 20px;">
+                <div class="allocation-layout" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 30px; justify-content: center; align-items: stretch; width: 100%;">
+                    
+                    <!-- Left Box: Quadcopter X Graphic -->
+                    <div class="quad-graphic-box" style="flex: 1.5; min-width: 300px; max-width: 480px; background: #0c0c0e; border: 1px solid #1c1c1e; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <h3 style="margin-top: 0; color: #a1a1aa; font-size: 13px; font-weight: bold; border-bottom: 1px solid #1c1c1e; padding-bottom: 8px; width: 100%; text-align: center; letter-spacing: 0.5px;">VEHICLE MIXER & STATUS</h3>
+                        <div id="quad-graphic-container" style="width: 100%; display: block; position: relative;">
+                            <svg viewBox="0 0 500 500" width="100%" height="100%" style="display: block;">
+                                <!-- Diagonal Arms -->
+                                <line x1="250" y1="250" x2="130" y2="130" stroke="#27272a" stroke-width="8" stroke-linecap="round" />
+                                <line x1="250" y1="250" x2="370" y2="130" stroke="#27272a" stroke-width="8" stroke-linecap="round" />
+                                <line x1="250" y1="250" x2="130" y2="370" stroke="#27272a" stroke-width="8" stroke-linecap="round" />
+                                <line x1="250" y1="250" x2="370" y2="370" stroke="#27272a" stroke-width="8" stroke-linecap="round" />
+
+                                <!-- Center Body -->
+                                <circle cx="250" cy="250" r="35" fill="#18181b" stroke="#3f3f46" stroke-width="3" />
+                                <!-- Forward Indicator (Triangle pointing up) -->
+                                <polygon points="250,225 240,245 260,245" fill="#ef4444" />
+                                <text x="250" y="270" font-size="11" fill="#a1a1aa" text-anchor="middle" font-weight="600">FRONT</text>
+
+                                <!-- Motor 4 (Top-Left, CW) -->
+                                <g transform="translate(130, 130)">
+                                    <circle id="circle-alloc-m4" cx="0" cy="0" r="28" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-width="2.5" />
+                                    <text x="0" y="4" font-size="12" fill="#e4e4e7" font-weight="bold" text-anchor="middle">M4</text>
+                                    <!-- CW Arrow (concentric, clean) -->
+                                    <path d="M 0,-22 A 22,22 0 1,1 -22,0" fill="none" stroke="#10b981" stroke-width="2" />
+                                    <polygon points="-22,0 -26,6 -18,6" fill="#10b981" />
+                                    <text x="0" y="-35" font-size="11" fill="#10b981" font-weight="bold" text-anchor="middle">CW</text>
+                                    <!-- Actuator Command Frac Text -->
+                                    <text id="val-alloc-m4" x="0" y="-48" font-family="monospace" font-size="12" fill="#10b981" font-weight="bold" text-anchor="middle">0.000000</text>
+                                </g>
+         
+                                <!-- Motor 2 (Top-Right, CCW) -->
+                                <g transform="translate(370, 130)">
+                                    <circle id="circle-alloc-m2" cx="0" cy="0" r="28" fill="#ef4444" fill-opacity="0.1" stroke="#ef4444" stroke-width="2.5" />
+                                    <text x="0" y="4" font-size="12" fill="#e4e4e7" font-weight="bold" text-anchor="middle">M2</text>
+                                    <!-- CCW Arrow (concentric, clean) -->
+                                    <path d="M 0,-22 A 22,22 0 1,0 22,0" fill="none" stroke="#ef4444" stroke-width="2" />
+                                    <polygon points="22,0 18,6 26,6" fill="#ef4444" />
+                                    <text x="0" y="-35" font-size="11" fill="#ef4444" font-weight="bold" text-anchor="middle">CCW</text>
+                                    <!-- Actuator Command Frac Text -->
+                                    <text id="val-alloc-m2" x="0" y="-48" font-family="monospace" font-size="12" fill="#ef4444" font-weight="bold" text-anchor="middle">0.000000</text>
+                                </g>
+         
+                                <!-- Motor 3 (Bottom-Left, CCW) -->
+                                <g transform="translate(130, 370)">
+                                    <circle id="circle-alloc-m3" cx="0" cy="0" r="28" fill="#ef4444" fill-opacity="0.1" stroke="#ef4444" stroke-width="2.5" />
+                                    <text x="0" y="4" font-size="12" fill="#e4e4e7" font-weight="bold" text-anchor="middle">M3</text>
+                                    <!-- CCW Arrow (concentric, clean) -->
+                                    <path d="M 0,-22 A 22,22 0 1,0 22,0" fill="none" stroke="#ef4444" stroke-width="2" />
+                                    <polygon points="22,0 18,6 26,6" fill="#ef4444" />
+                                    <text x="0" y="-35" font-size="11" fill="#ef4444" font-weight="bold" text-anchor="middle">CCW</text>
+                                    <!-- Actuator Command Frac Text -->
+                                    <text id="val-alloc-m3" x="0" y="-48" font-family="monospace" font-size="12" fill="#ef4444" font-weight="bold" text-anchor="middle">0.000000</text>
+                                </g>
+         
+                                <!-- Motor 1 (Bottom-Right, CW) -->
+                                <g transform="translate(370, 370)">
+                                    <circle id="circle-alloc-m1" cx="0" cy="0" r="28" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-width="2.5" />
+                                    <text x="0" y="4" font-size="12" fill="#e4e4e7" font-weight="bold" text-anchor="middle">M1</text>
+                                    <!-- CW Arrow (concentric, clean) -->
+                                    <path d="M 0,-22 A 22,22 0 1,1 -22,0" fill="none" stroke="#10b981" stroke-width="2" />
+                                    <polygon points="-22,0 -26,6 -18,6" fill="#10b981" />
+                                    <text x="0" y="-35" font-size="11" fill="#10b981" font-weight="bold" text-anchor="middle">CW</text>
+                                    <!-- Actuator Command Frac Text -->
+                                    <text id="val-alloc-m1" x="0" y="-48" font-family="monospace" font-size="12" fill="#10b981" font-weight="bold" text-anchor="middle">0.000000</text>
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Box: Coordinate Frame Indicator -->
+                    <div class="coord-frame-box" style="flex: 1; min-width: 250px; max-width: 380px; background: #0c0c0e; border: 1px solid #1c1c1e; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <h3 style="margin-top: 0; color: #a1a1aa; font-size: 13px; font-weight: bold; border-bottom: 1px solid #1c1c1e; padding-bottom: 8px; width: 100%; text-align: center; letter-spacing: 0.5px;">BODY COORDINATE FRAME</h3>
+                        <div style="width: 100%; max-width: 240px; margin-top: 25px; margin-bottom: 20px;">
+                            <svg viewBox="0 0 160 160" width="100%" height="100%" style="display: block; margin: auto;">
+                                <!-- X and Y originate from Z at center (80, 80) -->
+                                <!-- Draw X axis (Forward) - Red pointing UP -->
+                                <line x1="80" y1="80" x2="80" y2="25" stroke="#ef4444" stroke-width="2.5" />
+                                <polygon points="80,25 76,33 84,33" fill="#ef4444" />
+                                <text x="80" y="15" font-size="11" fill="#ef4444" text-anchor="middle" font-weight="bold">X (Forward)</text>
+
+                                <!-- Draw Y axis (Right) - Green pointing RIGHT -->
+                                <line x1="80" y1="80" x2="135" y2="80" stroke="#10b981" stroke-width="2.5" />
+                                <polygon points="135,80 127,76 127,84" fill="#10b981" />
+                                <text x="142" y="84" font-size="11" fill="#10b981" text-anchor="start" font-weight="bold">Y (Right)</text>
+
+                                <!-- Z axis (Down) - Blue Circle centered at (80, 80) with Cross inside -->
+                                <circle cx="80" cy="80" r="10" fill="#0c0c0e" stroke="#3b82f6" stroke-width="2.5" />
+                                <line x1="73" y1="73" x2="87" y2="87" stroke="#3b82f6" stroke-width="2" />
+                                <line x1="87" y1="73" x2="73" y2="87" stroke="#3b82f6" stroke-width="2" />
+                                <text x="80" y="105" font-size="11" fill="#3b82f6" text-anchor="middle" font-weight="bold">Z (Down)</text>
+                            </svg>
+                        </div>
+                        <div style="margin-top: 15px; font-size: 11px; color: #a1a1aa; line-height: 1.5; text-align: center; border-top: 1px solid #1c1c1e; padding-top: 15px; width: 100%;">
+                            Standard Aerospace Body Coordinate System (Forward-Right-Down). X-axis (red) points forward, Y-axis (green) points right, and Z-axis (blue) points down into the page.
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="telemetry_layout.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
