@@ -1,6 +1,5 @@
-# Chesapeake Flight Control System
+# Custom-Mcu
 
-![Chesapeake Logo](configurator/chesapeake.png)
 
 Chesapeake is a high-performance, modular embedded flight control firmware designed for the Seeed Studio XIAO RP2350 microcontroller. Built in C++ using PlatformIO with the Earle Philhower Arduino-Pico core, it implements state-of-the-art guidance, navigation, and control algorithms, leveraging Eigen for optimized vector mathematics, custom attitude estimation, and custom Hardware Abstraction Layer (HAL) drivers.
 
